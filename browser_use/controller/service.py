@@ -433,6 +433,14 @@ class Controller:
 				logger.error(msg)
 				return ActionResult(error=msg, include_in_memory=True)
 
+		##################################### DISCORD TOOLS #####################################
+		@self.registry.action(
+			description=""
+		)
+		async def discord_tool_1():
+			pass
+
+		#########################################################################################
 	def action(self, description: str, **kwargs):
 		"""Decorator for registering custom actions
 

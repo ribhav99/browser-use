@@ -30,5 +30,5 @@ async def main(task):
 
 
 if __name__ == '__main__':
-	task = "open discord website and summarise all the main channels conversations from the omega discord server."
+	task = "Open discord and scroll through the announcements channel on the bittensor server. Then summarise announcements from the past week and send this summary in the general channel of the omega labs discord server. Be sure not to get confused between what a server, channel or chat is."
 	asyncio.run(main(task))

@@ -238,7 +238,6 @@ class Agent:
 
 	def _setup_action_models(self) -> None:
 		"""Setup dynamic action models from controller's registry"""
-		# Get the dynamic action model from controller's registry
 		self.ActionModel = self.controller.registry.create_action_model()
 		# Create output model with the dynamic actions
 		self.AgentOutput = AgentOutput.type_with_custom_actions(self.ActionModel)
@@ -639,6 +638,9 @@ class Agent:
 			return True
 
 		class ValidationResult(BaseModel):
+			"""
+			Validation results.
+			"""
 			is_valid: bool
 			reason: str
 

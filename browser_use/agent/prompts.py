@@ -18,6 +18,8 @@ class SystemPrompt:
 		Returns the important rules for the agent.
 		"""
 		text = """
+0. If you have to login to a website and the login credentials are not provided and you are not already logged in, try opening the website again, perhaps in a different way, to check if the user is in fact logged in.
+
 1. RESPONSE FORMAT: You must ALWAYS respond with valid JSON in this exact format:
    {
      "current_state": {
@@ -70,6 +72,7 @@ class SystemPrompt:
    - If you have to do something repeatedly for example the task says for "each", or "for all", or "x times", count always inside "memory" how many times you have done it and how many remain. Don't stop until you have completed like the task asked you. Only call done after the last step.
    - Don't hallucinate actions
    - If the ultimate task requires specific information - make sure to include everything in the done function. This is what the user will see. Do not just say you are done, but include the requested information of the task.
+   - If the ultimate task requires you to access information that was extracted earlier, for example summarisation, then make sure to access this data to complete the task properly so that all the relevant information is fresh in context. Do this before calling the done function so that you can give the relevant context in that step.
 
 6. VISUAL CONTEXT:
    - When an image is provided, use it to understand the page layout
@@ -93,10 +96,10 @@ class SystemPrompt:
 
 9. Long tasks:
 - If the task is long keep track of the status in the memory. If the ultimate task requires multiple subinformation, keep track of the status in the memory.
-- If you get stuck, 
+- For information that you will need later, for example if it is a summarisation task and you need to store extracted information for summaries, use the data storing option while extracting data and use the data reading action to revisit it whenever required.
 
 10. Extraction:
-- If your task is to find information or do research - call extract_content on the specific pages to get and store the information.
+- If your task is to find information or do research - call extract_content on the specific pages to get and store the information and call get_saved_data to revisit the data whenever required.
 
 """
 		text += f'   - use maximum {self.max_actions_per_step} actions per sequence'
@@ -243,6 +246,7 @@ Your role is to:
 2. Evaluate progress towards the ultimate goal
 3. Identify potential challenges or roadblocks
 4. Suggest the next high-level steps to take
+5. Before completing a task, ensure that the requirements have been met. Use the get_saved_data function to review extracted information whenever required, eg: summarisation tasks.
 
 Inside your messages, there will be AI messages from different agents with different formats.
 

@@ -22,6 +22,7 @@ async def main(task):
 	agent = Agent(
 		task=task,
 		llm=ChatOpenAI(model='gpt-4o'),
+		planner_llm=ChatOpenAI(model='o3-mini'),
 		browser=browser
 	)
 
@@ -30,5 +31,5 @@ async def main(task):
 
 
 if __name__ == '__main__':
-	task = "Open discord and scroll through the announcements channel on the bittensor server. Then summarise announcements from the past week and send this summary in the general channel of the omega labs discord server. Be sure not to get confused between what a server, channel or chat is."
+	task = "Open X and summarise the top 10 tweets in great detail."
 	asyncio.run(main(task))

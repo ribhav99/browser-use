@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 from typing import Callable, Dict, Optional, Type
+import os
 
 from langchain_core.prompts import PromptTemplate
 from lmnr import Laminar, observe
@@ -38,6 +39,8 @@ class Controller:
 		self.output_model = output_model
 		self.registry = Registry(exclude_actions)
 		self._register_default_actions()
+		self._temp_file_storage = "temp_storage.txt"
+		self.temp_file = open(self._temp_file_storage, 'w')
 
 	def _register_default_actions(self):
 		"""Register all default browser actions"""
@@ -46,11 +49,15 @@ class Controller:
 
 			@self.registry.action('Complete task', param_model=self.output_model)
 			async def done(params: BaseModel):
+				self.temp_file.close()
+				# TODO: os.remove(self._temp_file_storage)
 				return ActionResult(is_done=True, extracted_content=params.model_dump_json())
 		else:
 
 			@self.registry.action('Complete task', param_model=DoneAction)
 			async def done(params: DoneAction):
+				self.temp_file.close()
+				# TODO: os.remove(self._temp_file_storage)
 				return ActionResult(is_done=True, extracted_content=params.text)
 
 		# Basic Navigation Actions
@@ -159,9 +166,9 @@ class Controller:
 
 		# Content Actions
 		@self.registry.action(
-			'Extract page content to retrieve specific information from the page, e.g. all company names, a specifc description, all information about, links with companies in structured format or simply links',
+			'Extract page content to retrieve specific information from the page, e.g. all company names, a specifc description, all information about something, links with companies in structured format or simply links, etc. Save extracted content if it is needed for the end goal.',
 		)
-		async def extract_content(goal: str, browser: BrowserContext, page_extraction_llm: BaseChatModel):
+		async def extract_content(goal: str, browser: BrowserContext, page_extraction_llm: BaseChatModel, store_information: bool):
 			page = await browser.get_current_page()
 			import markdownify
 
@@ -172,11 +179,17 @@ class Controller:
 			try:
 				output = page_extraction_llm.invoke(template.format(goal=goal, page=content))
 				msg = f'📄  Extracted from page\n: {output.content}\n'
+				if store_information:
+					self.temp_file.write(f'{output.content}\n')
+					msg =  "[Stored in Memory]" + msg
 				logger.info(msg)
 				return ActionResult(extracted_content=msg, include_in_memory=True)
 			except Exception as e:
 				logger.debug(f'Error extracting content: {e}')
 				msg = f'📄  Extracted from page\n: {content}\n'
+				if store_information:
+					self.temp_file.write(f'{content}\n')
+					msg =  "[Stored in Memory]" + msg
 				logger.info(msg)
 				return ActionResult(extracted_content=msg)
 
@@ -434,13 +447,34 @@ class Controller:
 				return ActionResult(error=msg, include_in_memory=True)
 
 		##################################### DISCORD TOOLS #####################################
-		@self.registry.action(
-			description=""
-		)
-		async def discord_tool_1():
-			pass
+		# @self.registry.action(
+		# 	description=""
+		# )
+		# async def discord_tool_1():
+		# 	pass
 
 		#########################################################################################
+
+		###################################### MEMORY TOOLS ######################################
+		@self.registry.action(
+			description="Read all the extracted information that was stored during the execution"
+		)
+		async def get_saved_data():
+			logger.info("\nReading from buffer...")
+			if not self.temp_file.closed:
+				was_open = True
+				self.temp_file.close()
+			else:
+				was_open = False
+			temp_file = open(self._temp_file_storage, 'r')
+			info = '\n'.join(temp_file.readlines())
+			temp_file.close()
+			if was_open:
+				self.temp_file = open(self._temp_file_storage, 'a')
+			logger.info(f"Read from buffer:\n{info}")
+			return ActionResult(extracted_content=info, include_in_memory=True)
+
+		##########################################################################################
 	def action(self, description: str, **kwargs):
 		"""Decorator for registering custom actions
 

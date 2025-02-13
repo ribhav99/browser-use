@@ -118,6 +118,8 @@ class Agent:
 		self.use_vision_for_planner = use_vision_for_planner
 		self.llm = llm
 		self.save_conversation_path = save_conversation_path
+		if self.save_conversation_path and '/' not in self.save_conversation_path:
+			self.save_conversation_path = f'{self.save_conversation_path}/'
 		self.save_conversation_path_encoding = save_conversation_path_encoding
 		self._last_result = None
 		self.include_attributes = include_attributes
@@ -219,12 +221,15 @@ class Agent:
 
 	def _set_model_names(self) -> None:
 		self.chat_model_library = self.llm.__class__.__name__
-		if hasattr(self.llm, 'model_name'):
-			self.model_name = self.llm.model_name  # type: ignore
-		elif hasattr(self.llm, 'model'):
-			self.model_name = self.llm.model  # type: ignore
-		else:
-			self.model_name = 'Unknown'
+		self.model_name = "Unknown"
+		# Check for 'model_name' attribute first
+		if hasattr(self.llm, "model_name"):
+			model = self.llm.model_name
+			self.model_name = model if model is not None else "Unknown"
+		# Fallback to 'model' attribute if needed
+		elif hasattr(self.llm, "model"):
+			model = self.llm.model
+			self.model_name = model if model is not None else "Unknown"
 
 		if self.planner_llm:
 			if hasattr(self.planner_llm, 'model_name'):

@@ -1,7 +1,7 @@
 import asyncio
 import json
 import logging
-from typing import Callable, Dict, Optional, Type
+from typing import Callable, Dict, Optional, Type, List, Dict
 import os
 
 from langchain_core.prompts import PromptTemplate
@@ -27,6 +27,7 @@ from browser_use.utils import time_execution_async, time_execution_sync
 
 logger = logging.getLogger(__name__)
 from langchain_core.language_models.chat_models import BaseChatModel
+from discord_tool import DiscordAPI
 
 
 class Controller:
@@ -41,6 +42,7 @@ class Controller:
 		self._register_default_actions()
 		self._temp_file_storage = "temp_storage.txt"
 		self.temp_file = open(self._temp_file_storage, 'w')
+		self.discord_tool = None
 
 	def _register_default_actions(self):
 		"""Register all default browser actions"""
@@ -447,17 +449,50 @@ class Controller:
 				return ActionResult(error=msg, include_in_memory=True)
 
 		##################################### DISCORD TOOLS #####################################
-		# @self.registry.action(
-		# 	description=""
-		# )
-		# async def discord_tool_1():
-		# 	pass
+		@self.registry.action(
+			description="Get a list of all the servers that a user is a part of. This returns a string which represents a list of dicts containing 'id' and 'name' of the servers"
+		)
+		async def get_discord_servers() -> ActionResult:
+			if not self.discord_tool:
+				self.discord_tool = DiscordAPI()
+			servers =  self.discord_tool.get_guilds()
+			return ActionResult(extracted_content=str([{"id": server["id"], "name": server["name"]} for server in servers]), include_in_memory=True)
 
+		@self.registry.action(
+			description="Get a list of all the channels from a given server. This returns a string which represents a list of dicts containing 'id' and 'name' of the channels"
+		)
+		async def get_discord_server_channels(server_id: str) -> ActionResult:
+			if not self.discord_tool:
+				self.discord_tool = DiscordAPI()
+			channels =  self.discord_tool.get_channels(server_id)
+			return ActionResult(extracted_content=str([{"id": channel["id"], "name": channel["name"]} for channel in channels]), include_in_memory=True)
+
+		@self.registry.action(
+			description="Get a list of all the private chats. This returns a string which represents a list of dicts containing 'id' and 'name' of the chats."
+		)
+		async def get_discord_dms() -> ActionResult:
+			"""Get all DM channels"""
+			if not self.discord_tool:
+				self.discord_tool = DiscordAPI()
+			dms = self.discord_tool.get_dm_channels()
+			cleaned_dms = []
+			for dm in dms:
+				cleaned_dm = {
+					"id": dm["id"],
+					"recipients": [recipient["global_name"] for recipient in dm["recipients"]]
+				}
+				cleaned_dms.append(cleaned_dm)
+			return ActionResult(extracted_content=str(cleaned_dms), include_in_memory=True)
+
+		
+		# async def get_discord_user_info(discord_api: DiscordAPI) -> Dict:
+		# 	"""Get information about the authenticated user"""
+		# 	return discord_api.get_user_info() 
 		#########################################################################################
 
 		###################################### MEMORY TOOLS ######################################
 		@self.registry.action(
-			description="Read all the extracted information that was stored during the execution"
+			description="Read all the extracted information that was stored during the execution. This must be used when the completion of a task requires you to revisit extracted information like summarisation."
 		)
 		async def get_saved_data():
 			logger.info("\nReading from buffer...")
@@ -575,3 +610,9 @@ class Controller:
 			return ActionResult()
 		except Exception as e:
 			raise e
+
+if __name__ == '__main__':
+	controller = Controller()
+	print(list(controller.registry.registry.actions.keys()))
+	print('\n')
+	print(controller.registry.get_prompt_description())

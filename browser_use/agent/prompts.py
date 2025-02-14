@@ -73,8 +73,9 @@ class SystemPrompt:
    - Don't hallucinate actions
    - If the ultimate task requires specific information - make sure to include everything in the done function. This is what the user will see. Do not just say you are done, but include the requested information of the task.
    - If the ultimate task requires you to access information that was extracted earlier, for example summarisation, then make sure to access this data to complete the task properly so that all the relevant information is fresh in context. Do this before calling the done function so that you can give the relevant context in that step.
+   - Use registered actions whenever you can since they will generally be more efficient than doing it yourself. Eg: the discord tool should be used when possible instead of going to the discord website.
 
-6. VISUAL CONTEXT:
+   6. VISUAL CONTEXT:
    - When an image is provided, use it to understand the page layout
    - Bounding boxes with labels correspond to element indexes
    - Each bounding box and its label have the same color

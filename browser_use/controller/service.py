@@ -3,6 +3,7 @@ import json
 import logging
 from typing import Callable, Dict, Optional, Type, List, Dict
 import os
+from datetime import datetime
 
 from langchain_core.prompts import PromptTemplate
 from lmnr import Laminar, observe
@@ -22,12 +23,13 @@ from browser_use.controller.views import (
 	SearchGoogleAction,
 	SendKeysAction,
 	SwitchTabAction,
+	ExtractMessagesAction
 )
 from browser_use.utils import time_execution_async, time_execution_sync
 
 logger = logging.getLogger(__name__)
 from langchain_core.language_models.chat_models import BaseChatModel
-from discord_tool import DiscordAPI
+from browser_use.controller.discord_tool import DiscordAPI
 
 
 class Controller:
@@ -484,7 +486,27 @@ class Controller:
 				cleaned_dms.append(cleaned_dm)
 			return ActionResult(extracted_content=str(cleaned_dms), include_in_memory=True)
 
-		
+		@self.registry.action(
+			description="Get the discord messages from a specific channel for a specific date range.",
+			param_model=ExtractMessagesAction
+		)
+		async def get_discord_messages(params: ExtractMessagesAction) -> ActionResult:
+			date_start = datetime.strptime(params.date_start, "%d-%m-%Y")
+			date_end = datetime.strptime(params.date_end, "%d-%m-%Y")
+			if not self.discord_tool:
+				self.discord_tool = DiscordAPI()
+			try:
+				messages = self.discord_tool.get_messages_between(params.channel_id, date_start, date_end)
+				if not messages:
+					content = "No messages found for the specified date range and channel."
+				else:
+					content = json.dumps(messages, indent=2)
+				return ActionResult(extracted_content=content, include_in_memory=True)
+			except Exception as e:
+				return ActionResult(error=str(e))
+			
+
+
 		# async def get_discord_user_info(discord_api: DiscordAPI) -> Dict:
 		# 	"""Get information about the authenticated user"""
 		# 	return discord_api.get_user_info() 

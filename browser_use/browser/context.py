@@ -134,6 +134,7 @@ class BrowserContextConfig:
 	include_dynamic_attributes: bool = True
 
 	_force_keep_context_alive: bool = False
+	disable_screenshots: bool = False
 
 
 @dataclass
@@ -688,6 +689,9 @@ class BrowserContext:
 		"""
 		Returns a base64 encoded screenshot of the current page.
 		"""
+		if self.config.disable_screenshots:
+			logger.debug("Screenshots are disabled in the config; returning empty string.")
+			return ""
 		page = await self.get_current_page()
 
 		screenshot = await page.screenshot(

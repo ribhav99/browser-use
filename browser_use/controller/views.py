@@ -44,6 +44,11 @@ class SendKeysAction(BaseModel):
 
 class ExtractPageContentAction(BaseModel):
     value: str
+
+class ExtractMessagesAction(BaseModel):
+	channel_id: str
+	date_start: str  # Expected format: dd-mm-yyyy
+	date_end: str  # Expected format: dd-mm-yyyy
 	
 class NoParamsAction(BaseModel):
 	"""

@@ -187,3 +187,40 @@ class DiscordAPI:
             cleaned["embeds"] = message["embeds"]
             
         return cleaned
+    
+    def get_messages_between(self, channel_id: str, date_start: datetime, date_end: datetime):
+        """
+        Get all messages in a channel between two dates.
+        
+        Args:
+            channel_id (str): The channel's ID.
+            date_start (datetime): The start datetime (inclusive).
+            date_end (datetime): The end datetime (inclusive).
+            
+        Returns:
+            list: List of messages (raw JSON) between the two dates.
+        """
+
+        if date_start > date_end:
+            raise ValueError("date_start must be earlier than date_end")
+        DISCORD_EPOCH = 1420070400000
+        date_end_ms = int(date_end.timestamp() * 1000)
+        max_snowflake = ((date_end_ms - DISCORD_EPOCH) << 22) + ((1 << 22) - 1)
+        before = str(max_snowflake + 1)
+        all_messages = []
+        while True:
+            messages = self.get_messages(channel_id, before=before, limit=100)
+            if not messages or not isinstance(messages, list):
+                break
+            for message in messages:
+                try:
+                    message_time = datetime.fromisoformat(message["timestamp"].replace("Z", ""))
+                except Exception:
+                    continue
+                if message_time < date_start:
+                    return all_messages
+                all_messages.append(self.clean_message(message))
+            before = messages[-1]["id"]
+            if len(messages) < 100:
+                break
+        return all_messages

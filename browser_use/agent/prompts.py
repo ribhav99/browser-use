@@ -26,7 +26,7 @@ class SystemPrompt:
 		"page_summary": "Quick detailed summary of new information from the current page which is not yet in the task history memory. Be specific with details which are important for the task. This is not on the meta level, but should be facts. If all the information is already in the task history memory, leave this empty.",
 		"evaluation_previous_goal": "Success|Failed|Unknown - Analyze the current elements and the image to check if the previous goals/actions are successful like intended by the task. Ignore the action result. The website is the ground truth. Also mention if something unexpected happened like new suggestions in an input field. Shortly state why/why not",
        "memory": "Description of what has been done and what you need to remember. Be very specific. Count here ALWAYS how many times you have done something and how many remain. E.g. 0 out of 10 websites analyzed. Continue with abc and xyz",
-       "next_goal": "What needs to be done with the next actions"
+       "next_goal": "What needs to be done with the next actions. The next actions might not have anything to do with the browser instance. You have actions available to use, some of them use the browser and some do not. Use whatever is more efficient for you goal."
      },
      "action": [
        {
@@ -116,6 +116,7 @@ INPUT STRUCTURE:
    - index: Numeric identifier for interaction
    - element_type: HTML element type (button, input, etc.)
    - element_text: Visible text or element description
+4. Available actions. Some actions might not use the browser and that is completely okay. Use whatever actions are required to complete the task.
 
 Example:
 [33]<button>Submit Form</button>
@@ -135,7 +136,10 @@ Notes:
 		    str: Formatted system prompt
 		"""
 
-		AGENT_PROMPT = f"""You are a precise browser automation agent that interacts with websites through structured commands. Your role is to:
+		AGENT_PROMPT = f"""You are a precise browser automation agent that interacts with websites through structured commands.
+		You have access to many actions. Some of them use the browser and some of them don't. You can use any action that helps you achieve your goal. Be efficient.
+		If you have an action that completes a task or subtask directly, do not waste time navigating the browser to do that same task. Just use the more efficient action.
+		Your role is to:
 1. Analyze the provided webpage elements and structure
 2. Use the given information to accomplish the ultimate task
 3. Respond with valid JSON containing your next action sequence and state assessment
@@ -145,7 +149,7 @@ Notes:
 
 {self.important_rules()}
 
-Functions:
+Functions/Actions:
 {self.default_action_description}
 
 Remember: Your responses must be valid JSON matching the specified format. Each action in the sequence must be valid."""
@@ -241,26 +245,32 @@ Interactive elements from current page:
 class PlannerPrompt(SystemPrompt):
 	def get_system_message(self) -> SystemMessage:
 		return SystemMessage(
-			content="""You are a planning agent that helps break down tasks into smaller steps and reason about the current state.
+			content=f"""You are a planning agent that helps break down tasks into smaller steps and reason about the current state.
 Your role is to:
 1. Analyze the current state and history
 2. Evaluate progress towards the ultimate goal
 3. Identify potential challenges or roadblocks
 4. Suggest the next high-level steps to take
 5. Before completing a task, ensure that the requirements have been met. Use the get_saved_data function to review extracted information whenever required, eg: summarisation tasks.
+6. You have access to many actions. Some of them use the browser and some of them don't. You can use any action that helps you achieve your goal. Be efficient. If you have an action that completes a task or subtask directly, do not waste time navigating the browser to do that same task. Just use the more efficient action.
+		
 
 Inside your messages, there will be AI messages from different agents with different formats.
 
 Your output format should be always a JSON object with the following fields:
-{
+{{
     "state_analysis": "Brief analysis of the current state and what has been done so far",
     "progress_evaluation": "Evaluation of progress towards the ultimate goal (as percentage and description)",
     "challenges": "List any potential challenges or roadblocks",
     "next_steps": "List 2-3 concrete next steps to take",
     "reasoning": "Explain your reasoning for the suggested next steps"
-}
+}}
 
 Ignore the other AI messages output structures.
 
-Keep your responses concise and focused on actionable insights."""
+Keep your responses concise and focused on actionable insights.
+
+Functions/Actions:
+{self.default_action_description}
+"""
 		)

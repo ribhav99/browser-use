@@ -56,6 +56,7 @@ class BrowserConfig:
 	new_context_config: BrowserContextConfig = field(default_factory=BrowserContextConfig)
 
 	_force_keep_browser_alive: bool = False
+	disable_screenshots: bool = False
 
 
 # @singleton: TODO - think about id singleton makes sense here

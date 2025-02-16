@@ -14,6 +14,7 @@ browser = Browser(
 	config=BrowserConfig(
 		# NOTE: you need to close your chrome browser - so that this can open your browser in debug mode
 		chrome_instance_path='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+		disable_screenshots=True
 	)
 )
 
@@ -31,5 +32,5 @@ async def main(task):
 
 
 if __name__ == '__main__':
-	task = "Open X and summarise the top 10 tweets in great detail."
+	task = "summarise messages from the past week from the omega labs discord server agents channel."
 	asyncio.run(main(task))

@@ -9,12 +9,16 @@ from langchain_openai import ChatOpenAI
 
 from browser_use import Agent
 from browser_use.browser.browser import Browser, BrowserConfig
+from browser_use.browser.context import BrowserContextConfig
+
+disable_screenshots = True
 
 browser = Browser(
 	config=BrowserConfig(
 		# NOTE: you need to close your chrome browser - so that this can open your browser in debug mode
 		chrome_instance_path='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-		disable_screenshots=True
+		disable_screenshots=disable_screenshots,
+		new_context_config=BrowserContextConfig(disable_screenshots=disable_screenshots)
 	)
 )
 

@@ -45,11 +45,14 @@ class SendKeysAction(BaseModel):
 class ExtractPageContentAction(BaseModel):
     value: str
 
-class ExtractMessagesAction(BaseModel):
+class ExtractDiscordMessagesAction(BaseModel):
 	channel_id: str
 	date_start: str  # Expected format: dd-mm-yyyy
 	date_end: str  # Expected format: dd-mm-yyyy
-	
+
+class SaveData(BaseModel):
+    data: str
+
 class NoParamsAction(BaseModel):
 	"""
 	Accepts absolutely anything in the incoming data

@@ -23,7 +23,8 @@ from browser_use.controller.views import (
 	SearchGoogleAction,
 	SendKeysAction,
 	SwitchTabAction,
-	ExtractMessagesAction
+	ExtractDiscordMessagesAction,
+	SaveData
 )
 from browser_use.utils import time_execution_async, time_execution_sync
 
@@ -487,10 +488,10 @@ class Controller:
 			return ActionResult(extracted_content=str(cleaned_dms), include_in_memory=True)
 
 		@self.registry.action(
-			description="Get the discord messages from a specific channel for a specific date range.",
-			param_model=ExtractMessagesAction
+			description="Get the discord messages from a specific channel for a specific date range. Date must be a string with format %d-%m-%Y. nothing more nothing less",
+			param_model=ExtractDiscordMessagesAction
 		)
-		async def get_discord_messages(params: ExtractMessagesAction) -> ActionResult:
+		async def get_discord_messages(params: ExtractDiscordMessagesAction) -> ActionResult:
 			date_start = datetime.strptime(params.date_start, "%d-%m-%Y")
 			date_end = datetime.strptime(params.date_end, "%d-%m-%Y")
 			if not self.discord_tool:
@@ -504,15 +505,29 @@ class Controller:
 				return ActionResult(extracted_content=content, include_in_memory=True)
 			except Exception as e:
 				return ActionResult(error=str(e))
-			
 
-
-		# async def get_discord_user_info(discord_api: DiscordAPI) -> Dict:
-		# 	"""Get information about the authenticated user"""
-		# 	return discord_api.get_user_info() 
 		#########################################################################################
 
 		###################################### MEMORY TOOLS ######################################
+		@self.registry.action(
+			description="Write useful information to a file that can be accessed later for use. This must be used when the completion of a task requires you to revisit extracted information like curating a list for something.",
+			param_model=SaveData
+		)
+		async def save_data(params: SaveData):
+			logger.info("\nWriting to buffer...")
+			if not self.temp_file.closed:
+				was_open = True
+				self.temp_file.close()
+			else:
+				was_open = False
+			temp_file = open(self._temp_file_storage, 'a')
+			temp_file.write(params.data)
+			temp_file.close()
+			if was_open:
+				self.temp_file = open(self._temp_file_storage, 'a')
+			logger.info(f"Wrote to buffer:\n{params.data}")
+			return ActionResult(extracted_content=f"Wrote to memry buffer: \n{params.data}", include_in_memory=True)
+		
 		@self.registry.action(
 			description="Read all the extracted information that was stored during the execution. This must be used when the completion of a task requires you to revisit extracted information like summarisation."
 		)
@@ -529,7 +544,7 @@ class Controller:
 			if was_open:
 				self.temp_file = open(self._temp_file_storage, 'a')
 			logger.info(f"Read from buffer:\n{info}")
-			return ActionResult(extracted_content=info, include_in_memory=True)
+			return ActionResult(extracted_content=f"Read the following information from memory buffer: \n{info}", include_in_memory=True)
 
 		##########################################################################################
 	def action(self, description: str, **kwargs):
